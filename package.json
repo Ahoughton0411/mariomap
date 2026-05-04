@@ -1,0 +1,9 @@
+{
+  "name": "mariomap-everythingmap",
+  "version": "1.0.0",
+  "description": "EverythingMap — Living knowledge graph for MarioMap",
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}
