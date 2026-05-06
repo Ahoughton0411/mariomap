@@ -6,12 +6,6 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-[[redirects]]
-  from = "/queue"
-  to = "/queue/index.html"
-  status = 200
-  force = true
-
 [[headers]]
   for = "/api/*"
   [headers.values]
