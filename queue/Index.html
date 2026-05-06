@@ -1,39 +1,931 @@
-* { margin: 0; padding: 0; box-sizing: border-box; } body { background: #050810; overflow: hidden; font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif; color: #e2e8f0; width: 100vw; height: 100vh; touch-action: none; } #canvas { display: block; cursor: grab; position: fixed; top: 0; left: 0; } #canvas:active { cursor: grabbing; } /* Header */ #header { position: fixed; top: 0; left: 0; right: 0; padding: 14px 18px 10px; display: flex; align-items: center; gap: 12px; background: linear-gradient(to bottom, rgba(5,8,16,0.98) 70%, transparent); z-index: 100; pointer-events: none; } #title-block { flex: 1; } #title-block h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.04em; color: #f8fafc; line-height: 1; } #title-block p { font-size: 10px; color: #64748b; margin-top: 3px; letter-spacing: 0.06em; text-transform: uppercase; } /* Controls toggle */ #controls-btn { position: fixed; top: 12px; right: 14px; width: 32px; height: 32px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 200; color: #94a3b8; font-size: 15px; backdrop-filter: blur(8px); transition: background 0.2s; } #controls-btn:hover { background: rgba(255,255,255,0.12); } /* Controls panel */ #controls { position: fixed; top: 54px; right: 14px; width: 200px; background: rgba(10,14,26,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 14px; z-index: 150; backdrop-filter: blur(16px); display: none; box-shadow: 0 8px 32px rgba(0,0,0,0.6); } #controls.open { display: block; } .ctrl-label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #475569; margin-bottom: 4px; margin-top: 10px; } .ctrl-label:first-child { margin-top: 0; } .ctrl-row { display: flex; align-items: center; gap: 8px; } .ctrl-row input[type=range] { flex: 1; height: 3px; -webkit-appearance: none; background: rgba(255,255,255,0.12); border-radius: 2px; outline: none; cursor: pointer; } .ctrl-row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #a78bfa; cursor: pointer; } .ctrl-val { font-size: 10px; color: #64748b; width: 24px; text-align: right; } /* Legend */ #legend { position: fixed; bottom: 14px; left: 14px; z-index: 100; display: flex; flex-direction: column; gap: 5px; } .legend-item { display: flex; align-items: center; gap: 7px; font-size: 10px; color: #64748b; letter-spacing: 0.04em; } .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; } /* Info panel */ #info-panel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(8,12,24,0.97); border-top: 1px solid rgba(255,255,255,0.08); padding: 16px 18px 22px; z-index: 100; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); max-height: 45vh; overflow-y: auto; backdrop-filter: blur(20px); touch-action: pan-y; -webkit-overflow-scrolling: touch; } #info-panel.open { transform: translateY(0); } #info-close { position: absolute; top: 12px; right: 14px; width: 28px; height: 28px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; color: #64748b; } #info-cat { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #64748b; margin-bottom: 4px; } #info-name { font-size: 18px; font-weight: 700; color: #f1f5f9; line-height: 1.2; margin-bottom: 10px; padding-right: 32px; } #info-desc { font-size: 13px; line-height: 1.65; color: #94a3b8; } #info-connections { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 10px; color: #475569; letter-spacing: 0.04em; } #info-connections span { color: #64748b; margin-right: 6px; margin-bottom: 4px; display: inline-block; background: rgba(255,255,255,0.05); border-radius: 4px; padding: 2px 7px; font-size: 10px; } /* Node count */ #stats { position: fixed; bottom: 14px; right: 14px; font-size: 9px; color: #334155; letter-spacing: 0.06em; text-align: right; z-index: 100; pointer-events: none; } /* Reset button */ #reset-btn { position: fixed; top: 54px; left: 14px; padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 7px; font-size: 10px; color: #475569; cursor: pointer; z-index: 100; letter-spacing: 0.04em; backdrop-filter: blur(8px); transition: all 0.2s; display: none; } #reset-btn.visible { display: block; } #reset-btn:hover { background: rgba(255,255,255,0.09); color: #64748b; } 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#050810">
+<title>EverythingMap — Pending Queue</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-Loading EverythingMap
+  body {
+    background: #050810;
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
 
-@keyframes spin{to{transform:rotate(360deg)}} 
+  /* Stars background */
+  #starfield {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
 
-EverythingMap
+  /* Header */
+  #header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(5,8,16,0.95);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 16px 18px 12px;
+    backdrop-filter: blur(16px);
+  }
 
-Loading...
+  #header h1 {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 4px;
+  }
 
-⚙
+  #header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
 
-Line Brightness
+  #header-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
 
-4 
+  .badge {
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
 
-Line Width
+  .badge-pending {
+    background: rgba(251,191,36,0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251,191,36,0.2);
+  }
 
-3 
+  .badge-approved {
+    background: rgba(110,231,183,0.12);
+    color: #6ee7b7;
+    border: 1px solid rgba(110,231,183,0.2);
+  }
 
-Node Fill
+  .badge-rejected {
+    background: rgba(248,113,113,0.12);
+    color: #f87171;
+    border: 1px solid rgba(248,113,113,0.2);
+  }
 
-7 
+  /* Tabs */
+  #tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 18px;
+    background: rgba(5,8,16,0.95);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    position: sticky;
+    top: 88px;
+    z-index: 99;
+    backdrop-filter: blur(16px);
+  }
 
-Text Brightness
+  .tab {
+    padding: 10px 16px;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    color: #475569;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    user-select: none;
+  }
 
-6 
+  .tab.active {
+    color: #a78bfa;
+    border-bottom-color: #a78bfa;
+  }
 
-Star Density
+  /* Content */
+  #content {
+    position: relative;
+    z-index: 1;
+    padding: 16px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
 
-5 
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #334155;
+  }
 
-59 NODES · 117 EDGES
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 16px; color: #475569; margin-bottom: 6px; }
+  .empty-state p { font-size: 13px; line-height: 1.6; }
 
-↺ RESET 
+  /* Concept card */
+  .card {
+    background: rgba(15,20,40,0.8);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
 
-✕
+  .card:hover { border-color: rgba(255,255,255,0.12); }
 
-let GRAPH = null; // ─── Setup ─────────────────────────────────────────────────────────────────── const canvas = document.getElementById('canvas'); const ctx = canvas.getContext('2d'); let W, H, dpr; let transform = { x: 0, y: 0, scale: 1 }; let selectedId = null; let hoveredId = null; // Controls let ctrl = { lb: 4, lw: 3, nf: 7, tb: 6, sd: 5 }; // Stars let stars = []; // Build node map let nodeMap = {}; let adjacency = {}; function buildGraphIndex() { nodeMap = {}; adjacency = {}; GRAPH.nodes.forEach(n => { nodeMap[n.id] = n; }); GRAPH.nodes.forEach(n => { adjacency[n.id] = new Set(); }); GRAPH.edges.forEach(([a, b]) => { if (nodeMap[a] && nodeMap[b]) { adjacency[a].add(b); adjacency[b].add(a); } }); } // ─── Resize ────────────────────────────────────────────────────────────────── function resize() { dpr = window.devicePixelRatio || 1; W = window.innerWidth; H = window.innerHeight; canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + 'px'; canvas.style.height = H + 'px'; generateStars(); if (transform.x === 0 && transform.y === 0 && transform.scale === 1) { fitGraph(); } } function fitGraph() { const nodes = GRAPH.nodes; const xs = nodes.map(n => n.x); const ys = nodes.map(n => n.y); const minX = Math.min(...xs) - 60; const maxX = Math.max(...xs) + 60; const minY = Math.min(...ys) - 60; const maxY = Math.max(...ys) + 60; const gw = maxX - minX; const gh = maxY - minY; const scaleX = W / gw; const scaleY = (H - 100) / gh; const scale = Math.min(scaleX, scaleY, 1.0); transform.scale = scale; transform.x = (W - gw * scale) / 2 - minX * scale; transform.y = (H - gh * scale) / 2 - minY * scale + 30; } function resetView() { fitGraph(); draw(); document.getElementById('reset-btn').classList.remove('visible'); } // ─── Stars ─────────────────────────────────────────────────────────────────── function generateStars() { stars = []; const count = Math.floor((W * H / 4000) * (ctrl.sd / 5)); for (let i = 0; i < count; i++) { stars.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.2 + 0.2, a: Math.random() * 0.5 + 0.05 }); } } // ─── Draw ───────────────────────────────────────────────────────────────────── function toScreen(gx, gy) { return { x: gx * transform.scale + transform.x, y: gy * transform.scale + transform.y }; } function draw() { ctx.save(); ctx.scale(dpr, dpr); ctx.clearRect(0, 0, W, H); // Background ctx.fillStyle = '#050810'; ctx.fillRect(0, 0, W, H); // Stars stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(148,163,184,${s.a})`; ctx.fill(); }); // Determine which nodes are connected to selected let connectedSet = new Set(); if (selectedId) { connectedSet = adjacency[selectedId] || new Set(); } const lbAlpha = ctrl.lb / 10; const lwWidth = ctrl.lw / 10 * 1.5 + 0.3; // Edges GRAPH.edges.forEach(([a, b]) => { const na = nodeMap[a], nb = nodeMap[b]; if (!na || !nb) return; const pa = toScreen(na.x, na.y); const pb = toScreen(nb.x, nb.y); let alpha = lbAlpha * 0.25; if (selectedId) { if ((a === selectedId || b === selectedId)) { alpha = lbAlpha * 0.85; } else if (connectedSet.has(a) || connectedSet.has(b)) { alpha = lbAlpha * 0.12; } else { alpha = lbAlpha * 0.04; } } const catA = GRAPH.categories[na.cat]; const catB = GRAPH.categories[nb.cat]; const grad = ctx.createLinearGradient(pa.x, pa.y, pb.x, pb.y); grad.addColorStop(0, catA ? catA.glow + Math.round(alpha * 255).toString(16).padStart(2,'0') : `rgba(148,163,184,${alpha})`); grad.addColorStop(1, catB ? catB.glow + Math.round(alpha * 255).toString(16).padStart(2,'0') : `rgba(148,163,184,${alpha})`); ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.strokeStyle = grad; ctx.lineWidth = lwWidth * (selectedId && (a === selectedId || b === selectedId) ? 2 : 1); ctx.stroke(); }); // Nodes const nfAlpha = ctrl.nf / 10; const tbAlpha = ctrl.tb / 10; GRAPH.nodes.forEach(n => { const p = toScreen(n.x, n.y); const r = n.r * transform.scale; const cat = GRAPH.categories[n.cat]; const glowColor = cat ? cat.glow : '#94a3b8'; const fillColor = cat ? cat.color : '#1c2a3a'; let nodeOpacity = 1; if (selectedId && selectedId !== n.id && !connectedSet.has(n.id)) { nodeOpacity = 0.38; } const isSelected = selectedId === n.id; const isHovered = hoveredId === n.id; // Glow ring if (isSelected || isHovered) { const glowR = r + 6; const grd = ctx.createRadialGradient(p.x, p.y, r * 0.5, p.x, p.y, glowR * 1.8); grd.addColorStop(0, glowColor + '60'); grd.addColorStop(1, glowColor + '00'); ctx.beginPath(); ctx.arc(p.x, p.y, glowR * 1.8, 0, Math.PI * 2); ctx.fillStyle = grd; ctx.fill(); } // Dark backing ring (prevents edge bleed-through) ctx.beginPath(); ctx.arc(p.x, p.y, r + 1.5, 0, Math.PI * 2); ctx.strokeStyle = `rgba(5,8,16,${nodeOpacity})`; ctx.lineWidth = 3; ctx.stroke(); // Node fill const innerGrd = ctx.createRadialGradient(p.x - r * 0.3, p.y - r * 0.3, 0, p.x, p.y, r); const fillHex = fillColor; innerGrd.addColorStop(0, glowColor + Math.round(nfAlpha * 0.5 * 255 * nodeOpacity).toString(16).padStart(2,'0')); innerGrd.addColorStop(1, fillHex + Math.round(nfAlpha * 255 * nodeOpacity).toString(16).padStart(2,'0')); ctx.globalAlpha = nodeOpacity; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fillStyle = innerGrd; ctx.fill(); // Ring stroke ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.strokeStyle = glowColor + Math.round((isSelected ? 0.9 : 0.4) * nodeOpacity * 255).toString(16).padStart(2,'0'); ctx.lineWidth = isSelected ? 2.5 : 1.2; ctx.stroke(); ctx.globalAlpha = 1; // Label — only render when zoomed in enough to be legible // At fit-zoom (~0.18 scale) labels are invisible noise; hide below threshold const LABEL_SCALE_MIN = 0.38; // below this scale, no labels const LABEL_FADE_MAX = 0.55; // above this scale, full labels const labelScaleAlpha = transform.scale < LABEL_SCALE_MIN ? 0 : transform.scale > LABEL_FADE_MAX ? 1 : (transform.scale - LABEL_SCALE_MIN) / (LABEL_FADE_MAX - LABEL_SCALE_MIN); // Always show selected node label regardless of scale const effectiveLabelAlpha = isSelected ? 1 : labelScaleAlpha; if (r > 5 && effectiveLabelAlpha > 0) { const lines = n.label.split('\n'); const fontSize = Math.max(8, Math.min(13, r * 0.55 + 5)); ctx.font = `${isSelected ? '600' : '500'} ${fontSize}px -apple-system, SF Pro Display, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const textAlpha = tbAlpha * nodeOpacity * effectiveLabelAlpha; const labelY = r < 14 ? p.y + r + fontSize * 0.9 : p.y; // Dark paint stroke for readability ctx.lineWidth = 3; ctx.strokeStyle = `rgba(5,8,16,${textAlpha * 0.9})`; lines.forEach((line, i) => { const ly = labelY + (i - (lines.length - 1) / 2) * (fontSize * 1.2); ctx.strokeText(line, p.x, ly); }); ctx.fillStyle = `rgba(241,245,249,${textAlpha})`; lines.forEach((line, i) => { const ly = labelY + (i - (lines.length - 1) / 2) * (fontSize * 1.2); ctx.fillText(line, p.x, ly); }); } }); ctx.restore(); } // ─── Legend ────────────────────────────────────────────────────────────────── function buildLegend() { const leg = document.getElementById('legend'); leg.innerHTML = ''; Object.entries(GRAPH.categories).forEach(([key, cat]) => { const item = document.createElement('div'); item.className = 'legend-item'; item.innerHTML = `<div class="legend-dot" style="background:${cat.glow}"></div>${cat.label}`; leg.appendChild(item); }); } // ─── Interaction ───────────────────────────────────────────────────────────── function hitTest(ex, ey) { let hit = null; let minDist = Infinity; GRAPH.nodes.forEach(n => { const p = toScreen(n.x, n.y); const r = n.r * transform.scale; const dist = Math.hypot(ex - p.x, ey - p.y); if (dist <= r + 8 && dist < minDist) { minDist = dist; hit = n.id; } }); return hit; } function selectNode(id) { selectedId = id; if (id) { const n = nodeMap[id]; const cat = GRAPH.categories[n.cat]; document.getElementById('info-cat').textContent = cat ? cat.label.toUpperCase() : n.cat.toUpperCase(); document.getElementById('info-name').textContent = n.label.replace('\n', ' '); document.getElementById('info-desc').textContent = n.desc; // Connections const connected = [...(adjacency[id] || [])]; const connDiv = document.getElementById('info-connections'); if (connected.length > 0) { connDiv.innerHTML = '<div style="font-size:9px;color:#334155;letter-spacing:.06em;margin-bottom:5px;text-transform:uppercase">Connected to</div>'; connected.forEach(cid => { const cn = nodeMap[cid]; if (cn) { const sp = document.createElement('span'); sp.textContent = cn.label.replace('\n', ' '); connDiv.appendChild(sp); } }); } else { connDiv.innerHTML = ''; } document.getElementById('info-panel').classList.add('open'); document.getElementById('reset-btn').classList.add('visible'); } else { document.getElementById('info-panel').classList.remove('open'); } } function closeInfo() { selectedId = null; document.getElementById('info-panel').classList.remove('open'); draw(); } // Touch/mouse pan & zoom let isDragging = false; let lastX, lastY; let pinchDist = null; let didDrag = false; canvas.addEventListener('mousedown', e => { isDragging = true; didDrag = false; lastX = e.clientX; lastY = e.clientY; }); canvas.addEventListener('mousemove', e => { if (isDragging) { const dx = e.clientX - lastX; const dy = e.clientY - lastY; transform.x += dx; transform.y += dy; lastX = e.clientX; lastY = e.clientY; if (Math.abs(dx) + Math.abs(dy) > 3) didDrag = true; draw(); } else { const h = hitTest(e.clientX, e.clientY); if (h !== hoveredId) { hoveredId = h; canvas.style.cursor = h ? 'pointer' : 'grab'; draw(); } } }); canvas.addEventListener('mouseup', e => { isDragging = false; if (!didDrag) { const h = hitTest(e.clientX, e.clientY); if (h) { selectNode(h); draw(); } else { selectNode(null); draw(); } } }); canvas.addEventListener('mouseleave', () => { isDragging = false; }); canvas.addEventListener('wheel', e => { e.preventDefault(); const delta = -e.deltaY * 0.001; const scaleF = 1 + delta; const cx = e.clientX, cy = e.clientY; transform.x = cx + (transform.x - cx) * scaleF; transform.y = cy + (transform.y - cy) * scaleF; transform.scale *= scaleF; transform.scale = Math.max(0.15, Math.min(5, transform.scale)); draw(); }, { passive: false }); // Touch canvas.addEventListener('touchstart', e => { if (e.touches.length === 1) { isDragging = true; didDrag = false; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; } else if (e.touches.length === 2) { isDragging = false; pinchDist = Math.hypot( e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY ); } e.preventDefault(); }, { passive: false }); canvas.addEventListener('touchmove', e => { if (e.touches.length === 1 && isDragging) { const dx = e.touches[0].clientX - lastX; const dy = e.touches[0].clientY - lastY; transform.x += dx; transform.y += dy; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; if (Math.abs(dx) + Math.abs(dy) > 3) didDrag = true; draw(); } else if (e.touches.length === 2 && pinchDist !== null) { const newDist = Math.hypot( e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY ); const scaleF = newDist / pinchDist; const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2; const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2; transform.x = cx + (transform.x - cx) * scaleF; transform.y = cy + (transform.y - cy) * scaleF; transform.scale *= scaleF; transform.scale = Math.max(0.1, Math.min(8, transform.scale)); pinchDist = newDist; draw(); } e.preventDefault(); }, { passive: false }); canvas.addEventListener('touchend', e => { if (e.touches.length === 0) { if (!didDrag) { const t = e.changedTouches[0]; const h = hitTest(t.clientX, t.clientY); if (h) { selectNode(h); draw(); } else if (!document.getElementById('info-panel').contains(e.target)) { selectNode(null); draw(); } } isDragging = false; pinchDist = null; } e.preventDefault(); }, { passive: false }); // ─── Controls ──────────────────────────────────────────────────────────────── function toggleControls() { document.getElementById('controls').classList.toggle('open'); } function updateCtrl(el, key) { ctrl[key] = parseInt(el.value); document.getElementById(key + '-val').textContent = el.value; if (key === 'sd') generateStars(); draw(); } // Prevent info panel scroll from propagating to canvas const infoPanel = document.getElementById('info-panel'); infoPanel.addEventListener('touchstart', e => e.stopPropagation(), { passive: true }); infoPanel.addEventListener('touchmove', e => e.stopPropagation(), { passive: true }); // ─── Init ──────────────────────────────────────────────────────────────────── // ─── Init ──────────────────────────────────────────────────────────────────── async function init() { document.getElementById('loading').style.display = 'flex'; try { const resp = await fetch('/api/graph'); if (!resp.ok) throw new Error(`HTTP ${resp.status}`); GRAPH = await resp.json(); buildGraphIndex(); const nodeCount = GRAPH.nodes.length; const edgeCount = GRAPH.edges.length; const ver = GRAPH.meta?.version || '1.2'; document.getElementById('map-version').textContent = `v${ver} · ${nodeCount} nodes · ${edgeCount} edges`; document.getElementById('stats').textContent = `${nodeCount} NODES · ${edgeCount} EDGES`; buildLegend(); resize(); draw(); } catch(err) { document.getElementById('loading').innerHTML = '<div style="text-align:center;color:#f87171;font-size:14px;padding:20px;">Failed to load graph.<br><span style=\"color:#475569;font-size:12px\">Check connection or try refreshing.</span></div>'; return; } finally { document.getElementById('loading').style.display = 'none'; } } window.addEventListener('resize', () => { if (GRAPH) { resize(); draw(); } }); init(); 
+  .card-header {
+    padding: 16px 16px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .cluster-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px currentColor;
+  }
+
+  .card-title-block { flex: 1; min-width: 0; }
+
+  .card-cluster {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 3px;
+  }
+
+  .card-label {
+    font-size: 17px;
+    font-weight: 700;
+    color: #f1f5f9;
+    line-height: 1.2;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+
+  .meta-pill {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    background: rgba(255,255,255,0.05);
+    color: #475569;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .meta-pill.depth-asteroid { color: #fbbf24; border-color: rgba(251,191,36,0.2); background: rgba(251,191,36,0.06); }
+  .meta-pill.depth-star { color: #a78bfa; border-color: rgba(167,139,250,0.2); background: rgba(167,139,250,0.06); }
+  .meta-pill.depth-planet { color: #60a5fa; border-color: rgba(96,165,250,0.2); background: rgba(96,165,250,0.06); }
+  .meta-pill.depth-moon { color: #94a3b8; border-color: rgba(148,163,184,0.2); background: rgba(148,163,184,0.06); }
+
+  .card-body {
+    padding: 0 16px 14px;
+  }
+
+  .card-desc {
+    font-size: 14px;
+    line-height: 1.65;
+    color: #94a3b8;
+    margin-bottom: 12px;
+  }
+
+  /* Connections */
+  .connections-label {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #334155;
+    margin-bottom: 6px;
+  }
+
+  .connections-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+
+  .connection-tag {
+    padding: 3px 9px;
+    border-radius: 8px;
+    font-size: 10px;
+    background: rgba(167,139,250,0.08);
+    color: #7c3aed;
+    border: 1px solid rgba(167,139,250,0.15);
+    color: #a78bfa;
+  }
+
+  .no-connections {
+    font-size: 11px;
+    color: #334155;
+    font-style: italic;
+  }
+
+  /* Threads (for asteroid-primaries) */
+  .threads-label {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #334155;
+    margin-bottom: 6px;
+  }
+
+  .thread-item {
+    font-size: 12px;
+    color: #64748b;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    line-height: 1.4;
+  }
+
+  .thread-item:last-child { border-bottom: none; }
+  .thread-item::before { content: '→ '; color: #334155; }
+
+  /* Action buttons */
+  .card-actions {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px 16px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .btn {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn:active { transform: scale(0.97); }
+
+  .btn-approve {
+    background: rgba(110,231,183,0.12);
+    color: #6ee7b7;
+    border: 1px solid rgba(110,231,183,0.25);
+  }
+
+  .btn-approve:hover { background: rgba(110,231,183,0.2); }
+
+  .btn-reject {
+    background: rgba(248,113,113,0.08);
+    color: #f87171;
+    border: 1px solid rgba(248,113,113,0.18);
+  }
+
+  .btn-reject:hover { background: rgba(248,113,113,0.15); }
+
+  /* Surfaced by */
+  .surfaced-info {
+    font-size: 10px;
+    color: #334155;
+    padding: 0 16px 12px;
+    display: flex;
+    gap: 12px;
+  }
+
+  /* Decision cards (approved/rejected) */
+  .decision-card {
+    background: rgba(10,14,26,0.6);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .decision-icon { font-size: 16px; flex-shrink: 0; }
+
+  .decision-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #94a3b8;
+    flex: 1;
+  }
+
+  .decision-date {
+    font-size: 10px;
+    color: #334155;
+  }
+
+  .card.stale {
+    border-color: rgba(251,191,36,0.2);
+  }
+
+  .stale-banner {
+    background: rgba(251,191,36,0.07);
+    border-bottom: 1px solid rgba(251,191,36,0.12);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #fbbf24;
+    letter-spacing: 0.03em;
+  }
+
+  .stale-banner .stale-days {
+    font-weight: 700;
+  }
+
+  .stale-banner .extensions-left {
+    margin-left: auto;
+    color: #92400e;
+    font-size: 10px;
+  }
+
+  .btn-extend {
+    background: rgba(251,191,36,0.08);
+    color: #fbbf24;
+    border: 1px solid rgba(251,191,36,0.2);
+    flex: 0.7;
+  }
+
+  .btn-extend:hover { background: rgba(251,191,36,0.15); }
+
+  .btn-archive {
+    background: rgba(100,116,139,0.08);
+    color: #64748b;
+    border: 1px solid rgba(100,116,139,0.15);
+    flex: 0.5;
+  }
+
+  .btn-archive:hover { background: rgba(100,116,139,0.14); }
+
+  .meta-pill.stale { color: #fbbf24; border-color: rgba(251,191,36,0.25); background: rgba(251,191,36,0.07); }
+
+  /* Dead letters tab badge */
+  .badge-archived {
+    background: rgba(100,116,139,0.1);
+    color: #64748b;
+    border: 1px solid rgba(100,116,139,0.15);
+  }
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: rgba(15,20,40,0.98);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: #e2e8f0;
+    z-index: 200;
+    transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    backdrop-filter: blur(20px);
+    white-space: nowrap;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Section divider */
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #334155;
+    margin: 20px 0 10px;
+  }
+
+  /* Weight indicator */
+  .weight-dots {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+
+  .weight-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+  }
+
+  .weight-dot.filled { background: #a78bfa; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<div id="header">
+  <h1>EverythingMap</h1>
+  <h2>Pending Queue</h2>
+  <div style="margin-top:6px;"><a href="/" style="font-size:10px;color:#475569;letter-spacing:.06em;text-decoration:none;">← EverythingMap</a></div>
+  <div id="header-meta">
+    <span class="badge badge-pending" id="pending-count">0 pending</span>
+    <span class="badge badge-approved" id="approved-count">0 approved</span>
+    <span class="badge badge-rejected" id="rejected-count">0 rejected</span>
+    <span class="badge badge-archived" id="archived-count">0 archived</span>
+  </div>
+</div>
+
+<div id="tabs">
+  <div class="tab active" onclick="switchTab('pending')">Pending</div>
+  <div class="tab" onclick="switchTab('approved')">Approved</div>
+  <div class="tab" onclick="switchTab('rejected')">Rejected</div>
+  <div class="tab" onclick="switchTab('archived')">Dead Letters</div>
+</div>
+
+<div id="content"></div>
+
+<div id="toast"></div>
+
+<script>
+// ─── Cluster colors (matches EverythingMap) ───────────────────────────────────
+const CLUSTER_COLORS = {
+  core:   { glow: '#a78bfa', label: 'Project Eternity' },
+  self:   { glow: '#60a5fa', label: 'Self / Cartography' },
+  engine: { glow: '#fbbf24', label: 'Creation Engine' },
+  people: { glow: '#fda4af', label: 'People & Stakes' },
+  built:  { glow: '#6ee7b7', label: 'Built Things' },
+  system: { glow: '#94a3b8', label: 'Infrastructure' },
+  new:    { glow: '#5eead4', label: 'This Morning' }
+};
+
+// ─── State ────────────────────────────────────────────────────────────────────
+// Embedded queue data — in production this would be fetched from Drive
+// Claude updates this data and regenerates the file on each deploy
+const QUEUE_DATA = {
+  "meta": {
+    "title": "EverythingMap Pending Queue",
+    "version": "1.0",
+    "lastUpdated": "2026-05-04"
+  },
+  "pending": [
+    {
+      "id": "black_hole_architecture",
+      "label": "Black Hole as Design Architecture",
+      "cluster": "core",
+      "desc": "Black holes are not destruction events — they are gravitational anchors, compression processors, and threshold markers. The event horizon is a physical Aperture Principle: cross it and inquiry stops permanently. Hawking radiation suggests information returns eventually in another form — a fragment that fell in doesn't cease to exist, it gets encoded differently.",
+      "connections": ["fracture", "aperture", "reproductive", "culling"],
+      "depth": "asteroid-primary",
+      "motion": "orbit-galaxy",
+      "parent": "core",
+      "weight": 3,
+      "surfaced": "2026-05-04",
+      "session": "MarioMap_Session_2026-05-04_Morning",
+      "status": "pending",
+      "surfacedBy": "aaron",
+      "reviewBy": "2026-06-04",
+      "extensions": 0,
+      "threads": [
+        "Black Hole as Threshold Architecture — event horizon = physical Aperture Principle",
+        "Black Hole as Compression/Return Cycle — Hawking radiation = fragment returning",
+        "Black Hole as Gravitational Anchor — what makes a galaxy cohere"
+      ]
+    }
+  ],
+  "approved": [],
+  "rejected": [],
+  "archived": []
+};
+
+let state = {
+  pending: [...QUEUE_DATA.pending],
+  approved: [...QUEUE_DATA.approved],
+  rejected: [...QUEUE_DATA.rejected],
+  archived: [...QUEUE_DATA.archived],
+  activeTab: 'pending'
+};
+
+// ─── Review windows by depth ──────────────────────────────────────────────────
+const REVIEW_WINDOWS = {
+  'galaxy':              60,
+  'star':                60,
+  'planet':              14,
+  'moon':                14,
+  'asteroid-primary':    30,
+  'asteroid-satellite':  30
+};
+
+const MAX_EXTENSIONS = 2;
+
+function getReviewWindow(depth) {
+  return REVIEW_WINDOWS[depth] || 30;
+}
+
+function daysOverdue(concept) {
+  if (!concept.reviewBy) return 0;
+  const now = new Date();
+  const due = new Date(concept.reviewBy);
+  const diff = Math.floor((now - due) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : 0;
+}
+
+function isStale(concept) {
+  return daysOverdue(concept) > 0;
+}
+
+function setReviewBy(concept) {
+  const days = getReviewWindow(concept.depth);
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  concept.reviewBy = date.toISOString().split('T')[0];
+  concept.extensions = concept.extensions || 0;
+}
+
+// ─── API ─────────────────────────────────────────────────────────────────────
+async function fetchQueue() {
+  try {
+    const resp = await fetch('/api/queue');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    state.pending = data.pending || [];
+    state.approved = data.approved || [];
+    state.rejected = data.rejected || [];
+    state.archived = data.archived || [];
+    return true;
+  } catch(err) {
+    showToast('Could not load queue — check connection');
+    return false;
+  }
+}
+
+async function postDecision(conceptId, decision) {
+  const resp = await fetch('/api/decision', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ conceptId, decision })
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${resp.status}`);
+  }
+  return resp.json();
+}
+
+// ─── Stars ─────────────────────────────────────────────────────────────────
+function initStars() {
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const stars = Array.from({length: 120}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.0 + 0.2,
+    a: Math.random() * 0.3 + 0.03
+  }));
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  stars.forEach(s => {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(148,163,184,${s.a})`;
+    ctx.fill();
+  });
+}
+
+// ─── Toast ──────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── Render ─────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['pending','approved','rejected'][i] === tab);
+  });
+  render();
+}
+
+function updateBadges() {
+  const staleCount = state.pending.filter(isStale).length;
+  const pendingLabel = staleCount > 0
+    ? `${state.pending.length} pending · ${staleCount} stale`
+    : `${state.pending.length} pending`;
+  document.getElementById('pending-count').textContent = pendingLabel;
+  document.getElementById('approved-count').textContent = `${state.approved.length} approved`;
+  document.getElementById('rejected-count').textContent = `${state.rejected.length} rejected`;
+  document.getElementById('archived-count').textContent = `${state.archived.length} archived`;
+}
+
+function depthClass(depth) {
+  if (!depth) return '';
+  if (depth.startsWith('asteroid')) return 'depth-asteroid';
+  return `depth-${depth}`;
+}
+
+function depthLabel(depth) {
+  const map = {
+    'galaxy': '✦ galaxy',
+    'star': '★ star',
+    'planet': '◉ planet',
+    'moon': '○ moon',
+    'asteroid-primary': '◈ asteroid',
+    'asteroid-satellite': '◇ satellite'
+  };
+  return map[depth] || depth;
+}
+
+function motionLabel(motion) {
+  if (!motion || motion === false) return null;
+  const map = {
+    'drift': '⟳ drifting',
+    'orbit-galaxy': '⟳ galaxy orbit',
+    'orbit-cluster': '⟳ cluster orbit'
+  };
+  return map[motion] || motion;
+}
+
+function renderWeightDots(weight) {
+  let html = '<div class="weight-dots">';
+  for (let i = 1; i <= 5; i++) {
+    html += `<div class="weight-dot${i <= weight ? ' filled' : ''}"></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderPendingCard(concept, index) {
+  const cluster = CLUSTER_COLORS[concept.cluster] || { glow: '#94a3b8', label: concept.cluster };
+  const motion = motionLabel(concept.motion);
+  const stale = isStale(concept);
+  const overdue = daysOverdue(concept);
+  const extensionsLeft = MAX_EXTENSIONS - (concept.extensions || 0);
+
+  const connectionsHtml = concept.connections && concept.connections.length > 0
+    ? concept.connections.map(c => `<span class="connection-tag">${c.replace(/_/g,' ')}</span>`).join('')
+    : '<span class="no-connections">No connections yet — asteroid status</span>';
+
+  const threadsHtml = concept.threads && concept.threads.length > 0
+    ? `<div class="threads-label">Forming threads</div>
+       ${concept.threads.map(t => `<div class="thread-item">${t}</div>`).join('')}`
+    : '';
+
+  const staleBanner = stale ? `
+    <div class="stale-banner">
+      ⚠ Overdue by <span class="stale-days">&nbsp;${overdue} day${overdue !== 1 ? 's' : ''}</span>
+      &nbsp;— review window passed
+      <span class="extensions-left">${extensionsLeft} extension${extensionsLeft !== 1 ? 's' : ''} left</span>
+    </div>` : '';
+
+  const actionButtons = stale ? `
+    <button class="btn btn-approve" onclick="approve(${index})">✓ Approve</button>
+    <button class="btn btn-extend" onclick="extend(${index})" ${extensionsLeft <= 0 ? 'disabled style="opacity:0.4"' : ''}>⟳ +30 days</button>
+    <button class="btn btn-archive" onclick="archive(${index})">↓ Archive</button>
+    <button class="btn btn-reject" onclick="reject(${index})">✕</button>
+  ` : `
+    <button class="btn btn-approve" onclick="approve(${index})">✓ Approve — Enter Graph</button>
+    <button class="btn btn-reject" onclick="reject(${index})">✕ Reject</button>
+  `;
+
+  return `
+    <div class="card${stale ? ' stale' : ''}" id="card-${index}">
+      ${staleBanner}
+      <div class="card-header">
+        <div class="cluster-dot" style="color:${cluster.glow};background:${cluster.glow}"></div>
+        <div class="card-title-block">
+          <div class="card-cluster">${cluster.label}</div>
+          <div class="card-label">${concept.label}</div>
+          <div class="card-meta">
+            <span class="meta-pill ${depthClass(concept.depth)}">${depthLabel(concept.depth)}</span>
+            ${motion ? `<span class="meta-pill">${motion}</span>` : ''}
+            ${stale ? `<span class="meta-pill stale">⚠ stale</span>` : ''}
+            ${renderWeightDots(concept.weight)}
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="card-desc">${concept.desc}</div>
+        <div class="connections-label">Connects to</div>
+        <div class="connections-list">${connectionsHtml}</div>
+        ${threadsHtml}
+      </div>
+
+      <div class="surfaced-info">
+        <span>📅 ${concept.surfaced}</span>
+        <span>🔍 ${concept.surfacedBy}</span>
+        ${concept.reviewBy ? `<span>⏱ due ${concept.reviewBy}</span>` : ''}
+      </div>
+
+      <div class="card-actions">${actionButtons}</div>
+    </div>
+  `;
+}
+
+function renderDecisionCard(concept, type) {
+  const cluster = CLUSTER_COLORS[concept.cluster] || { glow: '#94a3b8' };
+  const icons = { approved: '✓', rejected: '✕', archived: '◌' };
+  const colors = { approved: '#6ee7b7', rejected: '#f87171', archived: '#64748b' };
+  const dates = { approved: concept.decidedAt, rejected: concept.decidedAt, archived: concept.archivedAt };
+  const icon = icons[type] || '?';
+  const color = colors[type] || '#94a3b8';
+  const date = dates[type] || concept.surfaced;
+
+  return `
+    <div class="decision-card">
+      <div class="decision-icon" style="color:${color}">${icon}</div>
+      <div>
+        <div class="decision-label">${concept.label}</div>
+        <div class="decision-date">${cluster.label || concept.cluster} · ${date}</div>
+      </div>
+    </div>
+  `;
+}
+
+function render() {
+  updateBadges();
+  const content = document.getElementById('content');
+
+  if (state.activeTab === 'pending') {
+    if (state.pending.length === 0) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">✦</div>
+          <h3>Queue is clear</h3>
+          <p>No concepts waiting for approval.<br>New ones will surface from sessions.</p>
+        </div>`;
+      return;
+    }
+    // Sort: stale first, then by surfaced date
+    const sorted = [...state.pending]
+      .map((c, i) => ({ concept: c, origIndex: i }))
+      .sort((a, b) => {
+        const aStale = isStale(a.concept) ? 0 : 1;
+        const bStale = isStale(b.concept) ? 0 : 1;
+        return aStale - bStale;
+      });
+    const staleCount = sorted.filter(s => isStale(s.concept)).length;
+    content.innerHTML = `
+      <div class="section-label">${state.pending.length} concept${state.pending.length !== 1 ? 's' : ''} awaiting review${staleCount > 0 ? ` · ${staleCount} overdue` : ''}</div>
+      ${sorted.map(s => renderPendingCard(s.concept, s.origIndex)).join('')}
+    `;
+    return;
+  }
+
+  if (state.activeTab === 'approved') {
+    if (state.approved.length === 0) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">◉</div>
+          <h3>Nothing approved yet</h3>
+          <p>Approved concepts enter the EverythingMap graph.</p>
+        </div>`;
+      return;
+    }
+    content.innerHTML = `
+      <div class="section-label">${state.approved.length} approved — entered graph</div>
+      ${state.approved.map(c => renderDecisionCard(c, 'approved')).join('')}
+    `;
+    return;
+  }
+
+  if (state.activeTab === 'rejected') {
+    if (state.rejected.length === 0) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">◇</div>
+          <h3>Nothing rejected yet</h3>
+          <p>Rejected concepts return to the session log.<br>Refine in chat, resubmit when ready.</p>
+        </div>`;
+      return;
+    }
+    content.innerHTML = `
+      <div class="section-label">${state.rejected.length} rejected — back to session log</div>
+      ${state.rejected.map(c => renderDecisionCard(c, 'rejected')).join('')}
+    `;
+    return;
+  }
+
+  if (state.activeTab === 'archived') {
+    if (state.archived.length === 0) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">◌</div>
+          <h3>Dead letters are empty</h3>
+          <p>Concepts that aged out without a decision<br>land here. Not lost — just waiting to resurface.</p>
+        </div>`;
+      return;
+    }
+    content.innerHTML = `
+      <div class="section-label">${state.archived.length} archived — exceeded review window</div>
+      ${state.archived.map(c => renderDecisionCard(c, 'archived')).join('')}
+    `;
+    return;
+  }
+}
+
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['pending','approved','rejected','archived'][i] === tab);
+  });
+  render();
+}
+
+async function approve(index) {
+  const concept = state.pending[index];
+  if (!concept) return;
+  try {
+    showToast('Approving...');
+    await postDecision(concept.id, 'approve');
+    await fetchQueue();
+    showToast(`✓ "${concept.label}" approved — entered graph`);
+    render();
+  } catch(err) {
+    showToast(`Error: ${err.message}`);
+  }
+}
+
+async function reject(index) {
+  const concept = state.pending[index];
+  if (!concept) return;
+  try {
+    await postDecision(concept.id, 'reject');
+    await fetchQueue();
+    showToast(`✕ "${concept.label}" rejected — back to session log`);
+    render();
+  } catch(err) {
+    showToast(`Error: ${err.message}`);
+  }
+}
+
+async function extend(index) {
+  const concept = state.pending[index];
+  if (!concept) return;
+  if ((concept.extensions || 0) >= MAX_EXTENSIONS) {
+    showToast('Max extensions reached — approve, reject, or archive');
+    return;
+  }
+  try {
+    const result = await postDecision(concept.id, 'extend');
+    await fetchQueue();
+    showToast(`⟳ Extended to ${result.newReviewBy} · ${result.extensionsLeft} extension${result.extensionsLeft !== 1 ? 's' : ''} left`);
+    render();
+  } catch(err) {
+    showToast(`Error: ${err.message}`);
+  }
+}
+
+async function archive(index) {
+  const concept = state.pending[index];
+  if (!concept) return;
+  try {
+    await postDecision(concept.id, 'archive');
+    await fetchQueue();
+    showToast(`◌ "${concept.label}" archived — will resurface if the idea is real`);
+    render();
+  } catch(err) {
+    showToast(`Error: ${err.message}`);
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+// ─── Init ────────────────────────────────────────────────────────────────────
+async function init() {
+  initStars();
+  const ok = await fetchQueue();
+  if (ok) render();
+}
+
+window.addEventListener('resize', initStars);
+init();
+</script>
+</body>
+</html>
