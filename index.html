@@ -1,804 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#050810">
-<title>EverythingMap v1.2</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #050810;
-    overflow: hidden;
-    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-    color: #e2e8f0;
-    width: 100vw;
-    height: 100vh;
-    touch-action: none;
-  }
-  #canvas {
-    display: block;
-    cursor: grab;
-    position: fixed;
-    top: 0; left: 0;
-  }
-  #canvas:active { cursor: grabbing; }
-
-  /* Header */
-  #header {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    padding: 14px 18px 10px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: linear-gradient(to bottom, rgba(5,8,16,0.98) 70%, transparent);
-    z-index: 100;
-    pointer-events: none;
-  }
-  #title-block { flex: 1; }
-  #title-block h1 {
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: #f8fafc;
-    line-height: 1;
-  }
-  #title-block p {
-    font-size: 10px;
-    color: #64748b;
-    margin-top: 3px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  /* Controls toggle */
-  #controls-btn {
-    position: fixed;
-    top: 12px; right: 14px;
-    width: 32px; height: 32px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    z-index: 200;
-    color: #94a3b8;
-    font-size: 15px;
-    backdrop-filter: blur(8px);
-    transition: background 0.2s;
-  }
-  #controls-btn:hover { background: rgba(255,255,255,0.12); }
-
-  /* Controls panel */
-  #controls {
-    position: fixed;
-    top: 54px; right: 14px;
-    width: 200px;
-    background: rgba(10,14,26,0.95);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
-    padding: 14px;
-    z-index: 150;
-    backdrop-filter: blur(16px);
-    display: none;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-  }
-  #controls.open { display: block; }
-  .ctrl-label {
-    font-size: 9px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #475569;
-    margin-bottom: 4px;
-    margin-top: 10px;
-  }
-  .ctrl-label:first-child { margin-top: 0; }
-  .ctrl-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .ctrl-row input[type=range] {
-    flex: 1;
-    height: 3px;
-    -webkit-appearance: none;
-    background: rgba(255,255,255,0.12);
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
-  }
-  .ctrl-row input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px; height: 12px;
-    border-radius: 50%;
-    background: #a78bfa;
-    cursor: pointer;
-  }
-  .ctrl-val {
-    font-size: 10px;
-    color: #64748b;
-    width: 24px;
-    text-align: right;
-  }
-
-  /* Legend */
-  #legend {
-    position: fixed;
-    bottom: 14px; left: 14px;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 10px;
-    color: #64748b;
-    letter-spacing: 0.04em;
-  }
-  .legend-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  /* Info panel */
-  #info-panel {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: rgba(8,12,24,0.97);
-    border-top: 1px solid rgba(255,255,255,0.08);
-    padding: 16px 18px 22px;
-    z-index: 100;
-    transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-    max-height: 45vh;
-    overflow-y: auto;
-    backdrop-filter: blur(20px);
-    touch-action: pan-y;
-    -webkit-overflow-scrolling: touch;
-  }
-  #info-panel.open {
-    transform: translateY(0);
-  }
-  #info-close {
-    position: absolute;
-    top: 12px; right: 14px;
-    width: 28px; height: 28px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    font-size: 13px;
-    color: #64748b;
-  }
-  #info-cat {
-    font-size: 9px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #64748b;
-    margin-bottom: 4px;
-  }
-  #info-name {
-    font-size: 18px;
-    font-weight: 700;
-    color: #f1f5f9;
-    line-height: 1.2;
-    margin-bottom: 10px;
-    padding-right: 32px;
-  }
-  #info-desc {
-    font-size: 13px;
-    line-height: 1.65;
-    color: #94a3b8;
-  }
-  #info-connections {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255,255,255,0.06);
-    font-size: 10px;
-    color: #475569;
-    letter-spacing: 0.04em;
-  }
-  #info-connections span {
-    color: #64748b;
-    margin-right: 6px;
-    margin-bottom: 4px;
-    display: inline-block;
-    background: rgba(255,255,255,0.05);
-    border-radius: 4px;
-    padding: 2px 7px;
-    font-size: 10px;
-  }
-
-  /* Node count */
-  #stats {
-    position: fixed;
-    bottom: 14px; right: 14px;
-    font-size: 9px;
-    color: #334155;
-    letter-spacing: 0.06em;
-    text-align: right;
-    z-index: 100;
-    pointer-events: none;
-  }
-
-  /* Reset button */
-  #reset-btn {
-    position: fixed;
-    top: 54px; left: 14px;
-    padding: 6px 12px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 7px;
-    font-size: 10px;
-    color: #475569;
-    cursor: pointer;
-    z-index: 100;
-    letter-spacing: 0.04em;
-    backdrop-filter: blur(8px);
-    transition: all 0.2s;
-    display: none;
-  }
-  #reset-btn.visible { display: block; }
-  #reset-btn:hover { background: rgba(255,255,255,0.09); color: #64748b; }
-</style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <title>🍄 MarioMap</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#05070e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="MarioMap"/>
+  <link rel="apple-touch-icon" href="/icon.svg"/>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;overflow:hidden;background:#05070e;font-family:'Press Start 2P',monospace;touch-action:none}
+    #galaxy{position:absolute;inset:0;transition:opacity .38s ease,transform .38s ease;z-index:1}
+    #galaxy.hidden{opacity:0;pointer-events:none;transform:scale(1.06)}
+    #stars{position:absolute;inset:0;width:100%;height:100%}
+    #pipes{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+    #worlds{position:absolute;inset:0}
+    .world{position:absolute;transform:translate(-50%,-50%);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;-webkit-tap-highlight-color:transparent}
+    .orb{border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .18s ease,box-shadow .18s ease;position:relative}
+    .world:active .orb{transform:scale(.9)}
+    .orb-inner{font-size:clamp(18px,5vw,32px);line-height:1;z-index:2;position:relative}
+    .wlabel{font-size:clamp(5px,1.3vw,7px);color:#c8dce8;text-align:center;line-height:1.7;text-shadow:0 1px 6px #000}
+    .wgame{font-size:clamp(4px,1vw,5px);letter-spacing:.18em;color:#3a5a48;margin-top:2px}
+    .world.dim .orb{opacity:.38;filter:grayscale(.6)}
+    .world.dim .wlabel{opacity:.3}
+    #ghead{position:absolute;top:0;left:0;right:0;padding:max(14px,env(safe-area-inset-top)) 0 14px;text-align:center;pointer-events:none;z-index:10}
+    #gtitle{font-size:clamp(10px,3.2vw,15px);color:#fff;text-shadow:0 0 18px #4ade80,0 0 36px #22c55e;letter-spacing:.18em}
+    #gsub{margin-top:7px;font-size:clamp(5px,1.4vw,7px);color:#2a4a36;letter-spacing:.24em}
+    #panel{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .34s cubic-bezier(.25,.46,.45,.94)}
+    #panel.open{transform:translateY(0)}
+    #pbar{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:max(10px,env(safe-area-inset-top)) 14px 10px;background:#05070e;border-bottom:2px solid #1a2a1a}
+    #backbtn{font-family:'Press Start 2P',monospace;font-size:7px;background:none;border:1px solid #2a4a2a;color:#4ade80;padding:8px 11px;border-radius:4px;cursor:pointer;letter-spacing:.05em;white-space:nowrap;flex-shrink:0}
+    #backbtn:active{background:#0a180a}
+    #pname{font-size:clamp(6px,2vw,9px);color:#e2e8f0;letter-spacing:.1em;flex:1;min-width:0}
+    #ptag{font-size:5px;color:#253a2a;letter-spacing:.18em;flex-shrink:0}
+    #pcontent{flex:1;position:relative;overflow:hidden;background:#05070e}
+    #tframe{width:100%;height:100%;border:none;background:#05070e;display:none}
+    #launchscreen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:40px 28px}
+    #launchscreen.on{display:flex}
+    #lemoji{font-size:58px}
+    #lname{font-size:clamp(8px,2.6vw,12px);color:#e2e8f0;text-align:center;line-height:1.9}
+    #lsub{font-size:clamp(5px,1.4vw,7px);color:#3a5a48;letter-spacing:.22em}
+    #launbtn{font-family:'Press Start 2P',monospace;font-size:clamp(7px,2vw,10px);background:#102010;border:2px solid #4ade80;color:#4ade80;padding:16px 26px;border-radius:6px;cursor:pointer;letter-spacing:.1em;box-shadow:0 0 22px rgba(74,222,128,.18);transition:background .15s,box-shadow .15s}
+    #launbtn:active{background:#1a3a1a;box-shadow:0 0 32px rgba(74,222,128,.38)}
+    #lnote{font-size:5px;color:#1e2e1e;text-align:center;line-height:2;max-width:240px}
+    #comingscreen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:40px 28px}
+    #comingscreen.on{display:flex}
+    #cemoji{font-size:54px;filter:grayscale(1);opacity:.35}
+    .ctxt{font-size:clamp(7px,2vw,10px);color:#253a2a;text-align:center;line-height:2.2}
+    .csub{font-size:5px;color:#162216;letter-spacing:.22em}
+  </style>
 </head>
 <body>
-
-
-<div id="loading" style="position:fixed;inset:0;background:#050810;z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
-  <div style="width:36px;height:36px;border:2px solid rgba(167,139,250,0.2);border-top-color:#a78bfa;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-  <div style="font-size:12px;color:#475569;letter-spacing:0.08em;text-transform:uppercase;">Loading EverythingMap</div>
-</div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-
-<canvas id="canvas"></canvas>
-
-<div id="header">
-  <div id="title-block">
-    <h1>EverythingMap</h1>
-    <p id="map-version">Loading...</p>
+<div id="galaxy">
+  <canvas id="stars"></canvas>
+  <svg id="pipes" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="worlds"></div>
+  <div id="ghead">
+    <div id="gtitle">🍄 MARIOMAP</div>
+    <div id="gsub">SELECT A WORLD</div>
   </div>
 </div>
-
-<div id="controls-btn" onclick="toggleControls()">⚙</div>
-
-<div id="controls">
-  <div class="ctrl-label">Line Brightness</div>
-  <div class="ctrl-row">
-    <input type="range" id="line-brightness" min="1" max="10" value="4" oninput="updateCtrl(this,'lb')">
-    <span class="ctrl-val" id="lb-val">4</span>
+<div id="panel">
+  <div id="pbar">
+    <button id="backbtn" onclick="closePanel()">← MAP</button>
+    <span id="pname"></span>
+    <span id="ptag"></span>
   </div>
-  <div class="ctrl-label">Line Width</div>
-  <div class="ctrl-row">
-    <input type="range" id="line-width" min="1" max="10" value="3" oninput="updateCtrl(this,'lw')">
-    <span class="ctrl-val" id="lw-val">3</span>
-  </div>
-  <div class="ctrl-label">Node Fill</div>
-  <div class="ctrl-row">
-    <input type="range" id="node-fill" min="1" max="10" value="7" oninput="updateCtrl(this,'nf')">
-    <span class="ctrl-val" id="nf-val">7</span>
-  </div>
-  <div class="ctrl-label">Text Brightness</div>
-  <div class="ctrl-row">
-    <input type="range" id="text-brightness" min="1" max="10" value="6" oninput="updateCtrl(this,'tb')">
-    <span class="ctrl-val" id="tb-val">6</span>
-  </div>
-  <div class="ctrl-label">Star Density</div>
-  <div class="ctrl-row">
-    <input type="range" id="star-density" min="0" max="10" value="5" oninput="updateCtrl(this,'sd')">
-    <span class="ctrl-val" id="sd-val">5</span>
+  <div id="pcontent">
+    <iframe id="tframe" title="Tool" allow="clipboard-write; fullscreen"></iframe>
+    <div id="launchscreen">
+      <div id="lemoji"></div>
+      <div id="lname"></div>
+      <div id="lsub"></div>
+      <button id="launbtn" onclick="launchExt()">▶ OPEN TOOL</button>
+      <div id="lnote">OPENS IN YOUR BROWSER</div>
+    </div>
+    <div id="comingscreen">
+      <div id="cemoji"></div>
+      <div class="ctxt">WORLD UNDER<br/>CONSTRUCTION</div>
+      <div class="csub">COMING SOON</div>
+    </div>
   </div>
 </div>
-
-<div id="legend"></div>
-<div id="stats">59 NODES · 117 EDGES</div>
-<button id="reset-btn" onclick="resetView()">↺ RESET</button>
-
-<div id="info-panel">
-  <div id="info-close" onclick="closeInfo()">✕</div>
-  <div id="info-cat"></div>
-  <div id="info-name"></div>
-  <div id="info-desc"></div>
-  <div id="info-connections"></div>
-</div>
-
 <script>
-let GRAPH = null;
-
-// ─── Setup ───────────────────────────────────────────────────────────────────
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-
-let W, H, dpr;
-let transform = { x: 0, y: 0, scale: 1 };
-let selectedId = null;
-let hoveredId = null;
-
-// Controls
-let ctrl = { lb: 4, lw: 3, nf: 7, tb: 6, sd: 5 };
-
-// Stars
-let stars = [];
-
-// Build node map
-let nodeMap = {};
-let adjacency = {};
-
-function buildGraphIndex() {
-  nodeMap = {};
-  adjacency = {};
-  GRAPH.nodes.forEach(n => { nodeMap[n.id] = n; });
-  GRAPH.nodes.forEach(n => { adjacency[n.id] = new Set(); });
-  GRAPH.edges.forEach(([a, b]) => {
-    if (nodeMap[a] && nodeMap[b]) {
-      adjacency[a].add(b);
-      adjacency[b].add(a);
-    }
-  });
-}
-
-// ─── Resize ──────────────────────────────────────────────────────────────────
-function resize() {
-  dpr = window.devicePixelRatio || 1;
-  W = window.innerWidth;
-  H = window.innerHeight;
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width = W + 'px';
-  canvas.style.height = H + 'px';
-  generateStars();
-  if (transform.x === 0 && transform.y === 0 && transform.scale === 1) {
-    fitGraph();
-  }
-}
-
-function fitGraph() {
-  const nodes = GRAPH.nodes;
-  const xs = nodes.map(n => n.x);
-  const ys = nodes.map(n => n.y);
-  const minX = Math.min(...xs) - 60;
-  const maxX = Math.max(...xs) + 60;
-  const minY = Math.min(...ys) - 60;
-  const maxY = Math.max(...ys) + 60;
-  const gw = maxX - minX;
-  const gh = maxY - minY;
-  const scaleX = W / gw;
-  const scaleY = (H - 100) / gh;
-  const scale = Math.min(scaleX, scaleY, 1.0);
-  transform.scale = scale;
-  transform.x = (W - gw * scale) / 2 - minX * scale;
-  transform.y = (H - gh * scale) / 2 - minY * scale + 30;
-}
-
-function resetView() {
-  fitGraph();
-  draw();
-  document.getElementById('reset-btn').classList.remove('visible');
-}
-
-// ─── Stars ───────────────────────────────────────────────────────────────────
-function generateStars() {
-  stars = [];
-  const count = Math.floor((W * H / 4000) * (ctrl.sd / 5));
-  for (let i = 0; i < count; i++) {
-    stars.push({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      r: Math.random() * 1.2 + 0.2,
-      a: Math.random() * 0.5 + 0.05
-    });
-  }
-}
-
-// ─── Draw ─────────────────────────────────────────────────────────────────────
-function toScreen(gx, gy) {
-  return {
-    x: gx * transform.scale + transform.x,
-    y: gy * transform.scale + transform.y
-  };
-}
-
-function draw() {
-  ctx.save();
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, W, H);
-
-  // Background
-  ctx.fillStyle = '#050810';
-  ctx.fillRect(0, 0, W, H);
-
-  // Stars
-  stars.forEach(s => {
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(148,163,184,${s.a})`;
-    ctx.fill();
-  });
-
-  // Determine which nodes are connected to selected
-  let connectedSet = new Set();
-  if (selectedId) {
-    connectedSet = adjacency[selectedId] || new Set();
-  }
-
-  const lbAlpha = ctrl.lb / 10;
-  const lwWidth = ctrl.lw / 10 * 1.5 + 0.3;
-
-  // Edges
-  GRAPH.edges.forEach(([a, b]) => {
-    const na = nodeMap[a], nb = nodeMap[b];
-    if (!na || !nb) return;
-    const pa = toScreen(na.x, na.y);
-    const pb = toScreen(nb.x, nb.y);
-
-    let alpha = lbAlpha * 0.25;
-    if (selectedId) {
-      if ((a === selectedId || b === selectedId)) {
-        alpha = lbAlpha * 0.85;
-      } else if (connectedSet.has(a) || connectedSet.has(b)) {
-        alpha = lbAlpha * 0.12;
-      } else {
-        alpha = lbAlpha * 0.04;
-      }
-    }
-
-    const catA = GRAPH.categories[na.cat];
-    const catB = GRAPH.categories[nb.cat];
-    const grad = ctx.createLinearGradient(pa.x, pa.y, pb.x, pb.y);
-    grad.addColorStop(0, catA ? catA.glow + Math.round(alpha * 255).toString(16).padStart(2,'0') : `rgba(148,163,184,${alpha})`);
-    grad.addColorStop(1, catB ? catB.glow + Math.round(alpha * 255).toString(16).padStart(2,'0') : `rgba(148,163,184,${alpha})`);
-
-    ctx.beginPath();
-    ctx.moveTo(pa.x, pa.y);
-    ctx.lineTo(pb.x, pb.y);
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = lwWidth * (selectedId && (a === selectedId || b === selectedId) ? 2 : 1);
-    ctx.stroke();
-  });
-
-  // Nodes
-  const nfAlpha = ctrl.nf / 10;
-  const tbAlpha = ctrl.tb / 10;
-
-  GRAPH.nodes.forEach(n => {
-    const p = toScreen(n.x, n.y);
-    const r = n.r * transform.scale;
-    const cat = GRAPH.categories[n.cat];
-    const glowColor = cat ? cat.glow : '#94a3b8';
-    const fillColor = cat ? cat.color : '#1c2a3a';
-
-    let nodeOpacity = 1;
-    if (selectedId && selectedId !== n.id && !connectedSet.has(n.id)) {
-      nodeOpacity = 0.38;
-    }
-
-    const isSelected = selectedId === n.id;
-    const isHovered = hoveredId === n.id;
-
-    // Glow ring
-    if (isSelected || isHovered) {
-      const glowR = r + 6;
-      const grd = ctx.createRadialGradient(p.x, p.y, r * 0.5, p.x, p.y, glowR * 1.8);
-      grd.addColorStop(0, glowColor + '60');
-      grd.addColorStop(1, glowColor + '00');
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, glowR * 1.8, 0, Math.PI * 2);
-      ctx.fillStyle = grd;
-      ctx.fill();
-    }
-
-    // Dark backing ring (prevents edge bleed-through)
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, r + 1.5, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(5,8,16,${nodeOpacity})`;
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // Node fill
-    const innerGrd = ctx.createRadialGradient(p.x - r * 0.3, p.y - r * 0.3, 0, p.x, p.y, r);
-    const fillHex = fillColor;
-    innerGrd.addColorStop(0, glowColor + Math.round(nfAlpha * 0.5 * 255 * nodeOpacity).toString(16).padStart(2,'0'));
-    innerGrd.addColorStop(1, fillHex + Math.round(nfAlpha * 255 * nodeOpacity).toString(16).padStart(2,'0'));
-
-    ctx.globalAlpha = nodeOpacity;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = innerGrd;
-    ctx.fill();
-
-    // Ring stroke
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.strokeStyle = glowColor + Math.round((isSelected ? 0.9 : 0.4) * nodeOpacity * 255).toString(16).padStart(2,'0');
-    ctx.lineWidth = isSelected ? 2.5 : 1.2;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-
-    // Label — only render when zoomed in enough to be legible
-    // At fit-zoom (~0.18 scale) labels are invisible noise; hide below threshold
-    const LABEL_SCALE_MIN = 0.38; // below this scale, no labels
-    const LABEL_FADE_MAX = 0.55;  // above this scale, full labels
-    const labelScaleAlpha = transform.scale < LABEL_SCALE_MIN ? 0
-      : transform.scale > LABEL_FADE_MAX ? 1
-      : (transform.scale - LABEL_SCALE_MIN) / (LABEL_FADE_MAX - LABEL_SCALE_MIN);
-
-    // Always show selected node label regardless of scale
-    const effectiveLabelAlpha = isSelected ? 1 : labelScaleAlpha;
-
-    if (r > 5 && effectiveLabelAlpha > 0) {
-      const lines = n.label.split('\n');
-      const fontSize = Math.max(8, Math.min(13, r * 0.55 + 5));
-      ctx.font = `${isSelected ? '600' : '500'} ${fontSize}px -apple-system, SF Pro Display, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      const textAlpha = tbAlpha * nodeOpacity * effectiveLabelAlpha;
-      const labelY = r < 14 ? p.y + r + fontSize * 0.9 : p.y;
-
-      // Dark paint stroke for readability
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = `rgba(5,8,16,${textAlpha * 0.9})`;
-      lines.forEach((line, i) => {
-        const ly = labelY + (i - (lines.length - 1) / 2) * (fontSize * 1.2);
-        ctx.strokeText(line, p.x, ly);
-      });
-
-      ctx.fillStyle = `rgba(241,245,249,${textAlpha})`;
-      lines.forEach((line, i) => {
-        const ly = labelY + (i - (lines.length - 1) / 2) * (fontSize * 1.2);
-        ctx.fillText(line, p.x, ly);
-      });
-    }
-  });
-
-  ctx.restore();
-}
-
-// ─── Legend ──────────────────────────────────────────────────────────────────
-function buildLegend() {
-  const leg = document.getElementById('legend');
-  leg.innerHTML = '';
-  Object.entries(GRAPH.categories).forEach(([key, cat]) => {
-    const item = document.createElement('div');
-    item.className = 'legend-item';
-    item.innerHTML = `<div class="legend-dot" style="background:${cat.glow}"></div>${cat.label}`;
-    leg.appendChild(item);
-  });
-}
-
-// ─── Interaction ─────────────────────────────────────────────────────────────
-function hitTest(ex, ey) {
-  let hit = null;
-  let minDist = Infinity;
-  GRAPH.nodes.forEach(n => {
-    const p = toScreen(n.x, n.y);
-    const r = n.r * transform.scale;
-    const dist = Math.hypot(ex - p.x, ey - p.y);
-    if (dist <= r + 8 && dist < minDist) {
-      minDist = dist;
-      hit = n.id;
-    }
-  });
-  return hit;
-}
-
-function selectNode(id) {
-  selectedId = id;
-  if (id) {
-    const n = nodeMap[id];
-    const cat = GRAPH.categories[n.cat];
-    document.getElementById('info-cat').textContent = cat ? cat.label.toUpperCase() : n.cat.toUpperCase();
-    document.getElementById('info-name').textContent = n.label.replace('\n', ' ');
-    document.getElementById('info-desc').textContent = n.desc;
-
-    // Connections
-    const connected = [...(adjacency[id] || [])];
-    const connDiv = document.getElementById('info-connections');
-    if (connected.length > 0) {
-      connDiv.innerHTML = '<div style="font-size:9px;color:#334155;letter-spacing:.06em;margin-bottom:5px;text-transform:uppercase">Connected to</div>';
-      connected.forEach(cid => {
-        const cn = nodeMap[cid];
-        if (cn) {
-          const sp = document.createElement('span');
-          sp.textContent = cn.label.replace('\n', ' ');
-          connDiv.appendChild(sp);
-        }
-      });
-    } else {
-      connDiv.innerHTML = '';
-    }
-
-    document.getElementById('info-panel').classList.add('open');
-    document.getElementById('reset-btn').classList.add('visible');
-  } else {
-    document.getElementById('info-panel').classList.remove('open');
-  }
-}
-
-function closeInfo() {
-  selectedId = null;
-  document.getElementById('info-panel').classList.remove('open');
-  draw();
-}
-
-// Touch/mouse pan & zoom
-let isDragging = false;
-let lastX, lastY;
-let pinchDist = null;
-let didDrag = false;
-
-canvas.addEventListener('mousedown', e => {
-  isDragging = true;
-  didDrag = false;
-  lastX = e.clientX;
-  lastY = e.clientY;
-});
-
-canvas.addEventListener('mousemove', e => {
-  if (isDragging) {
-    const dx = e.clientX - lastX;
-    const dy = e.clientY - lastY;
-    transform.x += dx;
-    transform.y += dy;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    if (Math.abs(dx) + Math.abs(dy) > 3) didDrag = true;
-    draw();
-  } else {
-    const h = hitTest(e.clientX, e.clientY);
-    if (h !== hoveredId) {
-      hoveredId = h;
-      canvas.style.cursor = h ? 'pointer' : 'grab';
-      draw();
-    }
-  }
-});
-
-canvas.addEventListener('mouseup', e => {
-  isDragging = false;
-  if (!didDrag) {
-    const h = hitTest(e.clientX, e.clientY);
-    if (h) {
-      selectNode(h);
-      draw();
-    } else {
-      selectNode(null);
-      draw();
-    }
-  }
-});
-
-canvas.addEventListener('mouseleave', () => { isDragging = false; });
-
-canvas.addEventListener('wheel', e => {
-  e.preventDefault();
-  const delta = -e.deltaY * 0.001;
-  const scaleF = 1 + delta;
-  const cx = e.clientX, cy = e.clientY;
-  transform.x = cx + (transform.x - cx) * scaleF;
-  transform.y = cy + (transform.y - cy) * scaleF;
-  transform.scale *= scaleF;
-  transform.scale = Math.max(0.15, Math.min(5, transform.scale));
-  draw();
-}, { passive: false });
-
-// Touch
-canvas.addEventListener('touchstart', e => {
-  if (e.touches.length === 1) {
-    isDragging = true;
-    didDrag = false;
-    lastX = e.touches[0].clientX;
-    lastY = e.touches[0].clientY;
-  } else if (e.touches.length === 2) {
-    isDragging = false;
-    pinchDist = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
-    );
-  }
-  e.preventDefault();
-}, { passive: false });
-
-canvas.addEventListener('touchmove', e => {
-  if (e.touches.length === 1 && isDragging) {
-    const dx = e.touches[0].clientX - lastX;
-    const dy = e.touches[0].clientY - lastY;
-    transform.x += dx;
-    transform.y += dy;
-    lastX = e.touches[0].clientX;
-    lastY = e.touches[0].clientY;
-    if (Math.abs(dx) + Math.abs(dy) > 3) didDrag = true;
-    draw();
-  } else if (e.touches.length === 2 && pinchDist !== null) {
-    const newDist = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
-    );
-    const scaleF = newDist / pinchDist;
-    const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-    const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-    transform.x = cx + (transform.x - cx) * scaleF;
-    transform.y = cy + (transform.y - cy) * scaleF;
-    transform.scale *= scaleF;
-    transform.scale = Math.max(0.1, Math.min(8, transform.scale));
-    pinchDist = newDist;
-    draw();
-  }
-  e.preventDefault();
-}, { passive: false });
-
-canvas.addEventListener('touchend', e => {
-  if (e.touches.length === 0) {
-    if (!didDrag) {
-      const t = e.changedTouches[0];
-      const h = hitTest(t.clientX, t.clientY);
-      if (h) {
-        selectNode(h);
-        draw();
-      } else if (!document.getElementById('info-panel').contains(e.target)) {
-        selectNode(null);
-        draw();
-      }
-    }
-    isDragging = false;
-    pinchDist = null;
-  }
-  e.preventDefault();
-}, { passive: false });
-
-// ─── Controls ────────────────────────────────────────────────────────────────
-function toggleControls() {
-  document.getElementById('controls').classList.toggle('open');
-}
-
-function updateCtrl(el, key) {
-  ctrl[key] = parseInt(el.value);
-  document.getElementById(key + '-val').textContent = el.value;
-  if (key === 'sd') generateStars();
-  draw();
-}
-
-// Prevent info panel scroll from propagating to canvas
-const infoPanel = document.getElementById('info-panel');
-infoPanel.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
-infoPanel.addEventListener('touchmove', e => e.stopPropagation(), { passive: true });
-
-// ─── Init ────────────────────────────────────────────────────────────────────
-// ─── Init ────────────────────────────────────────────────────────────────────
-async function init() {
-  document.getElementById('loading').style.display = 'flex';
-  try {
-    const resp = await fetch('/api/graph');
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    GRAPH = await resp.json();
-    buildGraphIndex();
-    const nodeCount = GRAPH.nodes.length;
-    const edgeCount = GRAPH.edges.length;
-    const ver = GRAPH.meta?.version || '1.2';
-    document.getElementById('map-version').textContent = `v${ver} · ${nodeCount} nodes · ${edgeCount} edges`;
-    document.getElementById('stats').textContent = `${nodeCount} NODES · ${edgeCount} EDGES`;
-    buildLegend();
-    resize();
-    draw();
-  } catch(err) {
-    document.getElementById('loading').innerHTML =
-      '<div style="text-align:center;color:#f87171;font-size:14px;padding:20px;">Failed to load graph.<br><span style=\"color:#475569;font-size:12px\">Check connection or try refreshing.</span></div>';
-    return;
-  } finally {
-    document.getElementById('loading').style.display = 'none';
-  }
-}
-
-window.addEventListener('resize', () => { if (GRAPH) { resize(); draw(); } });
-init();
+const WORLDS=[
+  {id:'everythingmap',name:'EVERYTHING\nMAP',sub:'CONNECTIONS',game:'GALAXY',color:'#7c3aed',glow:'#a78bfa',emoji:'🌌',src:'/everythingmap.html',mode:'iframe',x:52,y:44,r:56},
+  {id:'questboard',name:'QUEST\nBOARD',sub:'MISSIONS',game:'SMB2',color:'#0f766e',glow:'#5eead4',emoji:'⚔️',src:'https://questboard-app.netlify.app',mode:'launch',x:22,y:67,r:42},
+  {id:'salonhub',name:'SALON\nHUB',sub:'JESS · IMPRESSIONS',game:'SMW',color:'#9d174d',glow:'#f9a8d4',emoji:'💇',src:'https://jessicasalonhub.netlify.app',mode:'launch',x:78,y:67,r:38},
+  {id:'heroes',name:'HEROES\nPLUMBING',sub:'CRAFT ENGINE',game:'SMB1',color:'#1e40af',glow:'#93c5fd',emoji:'🔧',src:'https://heroesplumbing.netlify.app',mode:'launch',x:28,y:24,r:34},
+  {id:'rddetailing',name:"R&D\nDETAILING",sub:'CRAFT ENGINE',game:"YOSHI'S",color:'#065f46',glow:'#6ee7b7',emoji:'🚗',src:null,mode:'coming',x:74,y:24,r:34},
+  {id:'creation',name:'CREATION\nENGINE',sub:'PERSONAL',game:'ODYSSEY',color:'#92400e',glow:'#fbbf24',emoji:'✨',src:null,mode:'coming',x:10,y:46,r:30}
+];
+const PIPES=[['everythingmap','questboard'],['everythingmap','salonhub'],['everythingmap','heroes'],['everythingmap','rddetailing'],['everythingmap','creation']];
+const canvas=document.getElementById('stars'),ctx=canvas.getContext('2d');let stars=[];
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}
+function initStars(){stars=[];for(let i=0;i<230;i++)stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.3+.2,o:Math.random()*.55+.1,speed:Math.random()*.006+.002,phase:Math.random()*Math.PI*2})}
+function drawStars(ts){ctx.clearRect(0,0,canvas.width,canvas.height);const t=ts/1000;stars.forEach(s=>{const o=s.o*(.55+.45*Math.sin(t*s.speed*100+s.phase));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${o})`;ctx.fill()});requestAnimationFrame(drawStars)}
+resizeCanvas();initStars();requestAnimationFrame(drawStars);
+window.addEventListener('resize',()=>{resizeCanvas();initStars();renderAll()});
+function renderAll(){renderPipes();renderWorlds()}
+function renderPipes(){const svg=document.getElementById('pipes');svg.innerHTML='';PIPES.forEach(([aId,bId])=>{const a=WORLDS.find(w=>w.id===aId),b=WORLDS.find(w=>w.id===bId);if(!a||!b)return;const ax=a.x/100*window.innerWidth,ay=a.y/100*window.innerHeight,bx=b.x/100*window.innerWidth,by=b.y/100*window.innerHeight;const line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1',ax);line.setAttribute('y1',ay);line.setAttribute('x2',bx);line.setAttribute('y2',by);line.setAttribute('stroke','#1e4a28');line.setAttribute('stroke-width','2');line.setAttribute('stroke-dasharray','5 9');line.setAttribute('opacity','.45');svg.appendChild(line)})}
+function renderWorlds(){const c=document.getElementById('worlds');c.innerHTML='';WORLDS.forEach(w=>{const size=Math.max(48,Math.min(w.r*2,window.innerWidth*.22,window.innerHeight*.18));const glow=w.mode==='coming'?'none':`0 0 ${size*.35}px ${w.glow}55, 0 0 ${size*.7}px ${w.color}33`;const el=document.createElement('div');el.className='world'+(w.mode==='coming'?' dim':'');el.style.cssText=`left:${w.x}%;top:${w.y}%`;el.onclick=()=>openPanel(w);el.innerHTML=`<div class="orb" style="width:${size}px;height:${size}px;background:radial-gradient(circle at 36% 32%, ${w.color}cc 0%, ${w.color}55 50%, ${w.color}18 100%);border:1.5px solid ${w.color}99;box-shadow:${glow};"><span class="orb-inner">${w.emoji}</span></div><div class="wlabel">${w.name.replace('\n','<br/>')}<div class="wgame">${w.game}</div></div>`;c.appendChild(el)})}
+renderAll();
+let currentExtSrc=null;
+function openPanel(w){document.getElementById('pname').textContent=w.name.replace('\n',' ');document.getElementById('ptag').textContent=w.game;document.getElementById('pbar').style.borderBottomColor=w.color+'99';const frame=document.getElementById('tframe'),launch=document.getElementById('launchscreen'),coming=document.getElementById('comingscreen');frame.style.display='none';launch.className='';coming.className='';currentExtSrc=null;if(w.mode==='iframe'){frame.style.display='block';frame.src=w.src}else if(w.mode==='launch'){currentExtSrc=w.src;document.getElementById('lemoji').textContent=w.emoji;document.getElementById('lname').textContent=w.name.replace('\n',' ');document.getElementById('lsub').textContent=w.sub;launch.className='on'}else{document.getElementById('cemoji').textContent=w.emoji;coming.className='on'}document.getElementById('galaxy').classList.add('hidden');document.getElementById('panel').classList.add('open');history.pushState({panel:true},'')}
+function closePanel(){document.getElementById('panel').classList.remove('open');document.getElementById('galaxy').classList.remove('hidden');setTimeout(()=>{document.getElementById('tframe').src=''},380)}
+function launchExt(){if(currentExtSrc)window.open(currentExtSrc,'_blank')}
+window.addEventListener('popstate',()=>{if(document.getElementById('panel').classList.contains('open'))closePanel()});
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 </script>
 </body>
 </html>
